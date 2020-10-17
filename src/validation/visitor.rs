@@ -5,7 +5,7 @@ use crate::parser::types::{
     Directive, ExecutableDocument, Field, FragmentDefinition, FragmentSpread, InlineFragment,
     OperationDefinition, OperationType, Selection, SelectionSet, TypeCondition, VariableDefinition,
 };
-use crate::registry::{self, MetaType, MetaTypeName};
+use crate::registry::{self, MetaInputObject, MetaType, MetaTypeName};
 use crate::{Name, Pos, Positioned, ServerError, Variables};
 use async_graphql_value::Value;
 
@@ -622,7 +622,7 @@ fn visit_input_value<'a, V: Visitor<'a>>(
                         .types
                         .get(MetaTypeName::concrete_typename(expected_ty))
                     {
-                        if let MetaType::InputObject { input_fields, .. } = ty {
+                        if let MetaType::InputObject(MetaInputObject { input_fields, .. }) = ty {
                             for (item_key, item_value) in values {
                                 if let Some(input_value) = input_fields.get(item_key.as_str()) {
                                     visit_input_value(

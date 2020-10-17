@@ -133,15 +133,16 @@ where
     fn create_type_info(registry: &mut registry::Registry) -> String {
         registry.create_type::<Self, _>(|registry| {
             EC::create_type_info(registry);
-            let additional_fields = if let Some(registry::MetaType::Object { fields, .. }) =
-                registry.types.remove(EC::type_name().as_ref())
-            {
-                fields
-            } else {
-                unreachable!()
-            };
+            let additional_fields =
+                if let Some(registry::MetaType::Object(registry::MetaObject { fields, .. })) =
+                    registry.types.remove(EC::type_name().as_ref())
+                {
+                    fields
+                } else {
+                    unreachable!()
+                };
 
-            registry::MetaType::Object {
+            registry::MetaType::Object(registry::MetaObject {
                 name: Self::type_name().to_string(),
                 description: None,
                 fields: {
@@ -151,7 +152,7 @@ where
                         "pageInfo".to_string(),
                         registry::MetaField {
                             name: "pageInfo".to_string(),
-                            description: Some("Information to aid in pagination."),
+                            description: Some("Information to aid in pagination.".to_string()),
                             args: Default::default(),
                             ty: PageInfo::create_type_info(registry),
                             deprecation: None,
@@ -166,7 +167,7 @@ where
                         "edges".to_string(),
                         registry::MetaField {
                             name: "edges".to_string(),
-                            description: Some("A list of edges."),
+                            description: Some("A list of edges.".to_string()),
                             args: Default::default(),
                             ty: <Option<Vec<Option<Edge<C, T, EE>>>> as Type>::create_type_info(
                                 registry,
@@ -185,7 +186,7 @@ where
                 cache_control: Default::default(),
                 extends: false,
                 keys: None,
-            }
+            })
         })
     }
 }

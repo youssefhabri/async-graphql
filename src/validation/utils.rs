@@ -70,7 +70,7 @@ pub fn is_valid_input_value(
             }
 
             match registry.types.get(type_name).unwrap() {
-                registry::MetaType::Scalar { is_valid, .. } => {
+                registry::MetaType::Scalar(registry::MetaScalar { is_valid, .. }) => {
                     if is_valid(&value) {
                         None
                     } else {
@@ -80,11 +80,11 @@ pub fn is_valid_input_value(
                         ))
                     }
                 }
-                registry::MetaType::Enum {
+                registry::MetaType::Enum(registry::MetaEnum {
                     enum_values,
                     name: enum_name,
                     ..
-                } => match value {
+                }) => match value {
                     ConstValue::Enum(name) => {
                         if !enum_values.contains_key(name.as_str()) {
                             Some(valid_error(
@@ -116,11 +116,11 @@ pub fn is_valid_input_value(
                         format!("expected type \"{}\"", type_name),
                     )),
                 },
-                registry::MetaType::InputObject {
+                registry::MetaType::InputObject(registry::MetaInputObject {
                     input_fields,
                     name: object_name,
                     ..
-                } => match value {
+                }) => match value {
                     ConstValue::Object(values) => {
                         let mut input_names = values
                             .keys()
@@ -128,14 +128,16 @@ pub fn is_valid_input_value(
                             .collect::<HashSet<_>>();
 
                         for field in input_fields.values() {
-                            input_names.remove(field.name);
-                            if let Some(value) = values.get(field.name) {
+                            input_names.remove(field.name.as_str());
+                            if let Some(value) = values.get(field.name.as_str()) {
                                 if let Some(validator) = &field.validator {
                                     if let Err(reason) = validator.is_valid(value) {
                                         return Some(valid_error(
                                             &QueryPathNode {
                                                 parent: Some(&path_node),
-                                                segment: QueryPathSegment::Name(field.name),
+                                                segment: QueryPathSegment::Name(
+                                                    field.name.as_str(),
+                                                ),
                                             },
                                             reason,
                                         ));
@@ -148,7 +150,7 @@ pub fn is_valid_input_value(
                                     value,
                                     QueryPathNode {
                                         parent: Some(&path_node),
-                                        segment: QueryPathSegment::Name(field.name),
+                                        segment: QueryPathSegment::Name(field.name.as_str()),
                                     },
                                 ) {
                                     return Some(reason);

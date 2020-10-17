@@ -28,7 +28,7 @@ pub fn generate(union_args: &args::Union) -> GeneratorResult<TokenStream> {
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&union_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let mut registry_types = Vec::new();
@@ -116,7 +116,7 @@ pub fn generate(union_args: &args::Union) -> GeneratorResult<TokenStream> {
                 });
             } else {
                 possible_types.push(quote! {
-                    if let Some(#crate_name::registry::MetaType::Union { possible_types: possible_types2, .. }) =
+                    if let Some(#crate_name::registry::MetaType::Union(#crate_name::registry::MetaUnion{ possible_types: possible_types2, .. })) =
                         registry.types.get(&*<#p as #crate_name::Type>::type_name()) {
                         possible_types.extend(::std::clone::Clone::clone(possible_types2));
                     }
@@ -160,15 +160,15 @@ pub fn generate(union_args: &args::Union) -> GeneratorResult<TokenStream> {
                 registry.create_type::<Self, _>(|registry| {
                     #(#registry_types)*
 
-                    #crate_name::registry::MetaType::Union {
-                        name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                    #crate_name::registry::MetaType::Union(#crate_name::registry::MetaUnion {
+                        name: ::std::string::ToString::to_string(#gql_typename),
                         description: #desc,
                         possible_types: {
                             let mut possible_types = #crate_name::indexmap::IndexSet::new();
                             #(#possible_types)*
                             possible_types
                         }
-                    }
+                    })
                 })
             }
         }

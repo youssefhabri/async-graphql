@@ -53,17 +53,18 @@ where
     fn create_type_info(registry: &mut registry::Registry) -> String {
         registry.create_type::<Self, _>(|registry| {
             E::create_type_info(registry);
-            let additional_fields = if let Some(registry::MetaType::Object { fields, .. }) =
-                registry.types.get(E::type_name().as_ref())
-            {
-                fields.clone()
-            } else {
-                unreachable!()
-            };
+            let additional_fields =
+                if let Some(registry::MetaType::Object(registry::MetaObject { fields, .. })) =
+                    registry.types.get(E::type_name().as_ref())
+                {
+                    fields.clone()
+                } else {
+                    unreachable!()
+                };
 
-            registry::MetaType::Object {
+            registry::MetaType::Object(registry::MetaObject {
                 name: Self::type_name().to_string(),
-                description: Some("An edge in a connection."),
+                description: Some("An edge in a connection.".to_string()),
                 fields: {
                     let mut fields = IndexMap::new();
 
@@ -71,7 +72,7 @@ where
                         "node".to_string(),
                         registry::MetaField {
                             name: "node".to_string(),
-                            description: Some("The item at the end of the edge"),
+                            description: Some("The item at the end of the edge".to_string()),
                             args: Default::default(),
                             ty: T::create_type_info(registry),
                             deprecation: None,
@@ -86,7 +87,7 @@ where
                         "cursor".to_string(),
                         registry::MetaField {
                             name: "cursor".to_string(),
-                            description: Some("A cursor for use in pagination"),
+                            description: Some("A cursor for use in pagination".to_string()),
                             args: Default::default(),
                             ty: String::create_type_info(registry),
                             deprecation: None,
@@ -103,7 +104,7 @@ where
                 cache_control: Default::default(),
                 extends: false,
                 keys: None,
-            }
+            })
         })
     }
 }

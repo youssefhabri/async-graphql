@@ -105,10 +105,12 @@ impl Type for Upload {
     }
 
     fn create_type_info(registry: &mut registry::Registry) -> String {
-        registry.create_type::<Self, _>(|_| registry::MetaType::Scalar {
-            name: Self::type_name().to_string(),
-            description: None,
-            is_valid: |value| matches!(value, Value::String(_)),
+        registry.create_type::<Self, _>(|_| {
+            registry::MetaType::Scalar(registry::MetaScalar {
+                name: Self::type_name().to_string(),
+                description: None,
+                is_valid: |value| matches!(value, Value::String(_)),
+            })
         })
     }
 }

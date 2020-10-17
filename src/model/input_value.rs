@@ -14,7 +14,7 @@ impl<'a> __InputValue<'a> {
     }
 
     async fn description(&self) -> Option<String> {
-        self.input_value.description.map(|s| s.to_string())
+        self.input_value.description.clone()
     }
 
     #[graphql(name = "type")]

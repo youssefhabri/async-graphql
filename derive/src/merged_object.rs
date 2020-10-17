@@ -17,7 +17,7 @@ pub fn generate(object_args: &args::MergedObject) -> GeneratorResult<TokenStream
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&object_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let s = match &object_args.data {
@@ -67,23 +67,23 @@ pub fn generate(object_args: &args::MergedObject) -> GeneratorResult<TokenStream
                     let mut fields = ::std::default::Default::default();
                     let mut cache_control = ::std::default::Default::default();
 
-                    if let ::std::option::Option::Some(#crate_name::registry::MetaType::Object {
+                    if let ::std::option::Option::Some(#crate_name::registry::MetaType::Object(#crate_name::registry::MetaObject {
                         fields: obj_fields,
                         cache_control: obj_cache_control,
                         ..
-                    }) = registry.types.get(&*#merged_type::type_name()) {
+                    })) = registry.types.get(&*#merged_type::type_name()) {
                         fields = ::std::clone::Clone::clone(obj_fields);
                         cache_control = *obj_cache_control;
                     }
 
-                    #crate_name::registry::MetaType::Object {
-                        name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                    #crate_name::registry::MetaType::Object(#crate_name::registry::MetaObject {
+                        name: ::std::string::ToString::to_string(#gql_typename),
                         description: #desc,
                         fields,
                         cache_control,
                         extends: #extends,
                         keys: ::std::option::Option::None,
-                    }
+                    })
                 })
             }
         }

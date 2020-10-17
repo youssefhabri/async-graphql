@@ -32,7 +32,7 @@ pub fn generate(interface_args: &args::Interface) -> GeneratorResult<TokenStream
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&interface_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let mut registry_types = Vec::new();
@@ -195,7 +195,7 @@ pub fn generate(interface_args: &args::Interface) -> GeneratorResult<TokenStream
 
             let desc = desc
                 .as_ref()
-                .map(|s| quote! {::std::option::Option::Some(#s)})
+                .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
                 .unwrap_or_else(|| quote! {::std::option::Option::None});
             let schema_default = default
                 .as_ref()
@@ -208,8 +208,8 @@ pub fn generate(interface_args: &args::Interface) -> GeneratorResult<TokenStream
                 })
                 .unwrap_or_else(|| quote! {::std::option::Option::None});
             schema_args.push(quote! {
-                args.insert(#name, #crate_name::registry::MetaInputValue {
-                    name: #name,
+                args.insert(::std::string::ToString::to_string(#name), #crate_name::registry::MetaInputValue {
+                    name: ::std::string::ToString::to_string(#name),
                     description: #desc,
                     ty: <#ty as #crate_name::Type>::create_type_info(registry),
                     default_value: #schema_default,
@@ -314,7 +314,7 @@ pub fn generate(interface_args: &args::Interface) -> GeneratorResult<TokenStream
                 registry.create_type::<Self, _>(|registry| {
                     #(#registry_types)*
 
-                    #crate_name::registry::MetaType::Interface {
+                    #crate_name::registry::MetaType::Interface(#crate_name::registry::MetaInterface {
                         name: ::std::string::ToString::to_string(#gql_typename),
                         description: #desc,
                         fields: {
@@ -329,7 +329,7 @@ pub fn generate(interface_args: &args::Interface) -> GeneratorResult<TokenStream
                         },
                         extends: #extends,
                         keys: ::std::option::Option::None,
-                    }
+                    })
                 })
             }
         }

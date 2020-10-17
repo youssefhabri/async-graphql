@@ -39,7 +39,7 @@ pub fn generate(
         .unwrap_or_else(|| RenameTarget::Type.rename(self_name.clone()));
 
     let desc = get_rustdoc(&item_impl.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let mut create_stream = Vec::new();
@@ -60,12 +60,12 @@ pub fn generate(
                     .rename(method.sig.ident.unraw().to_string(), RenameTarget::Field)
             });
             let field_desc = get_rustdoc(&method.attrs)?
-                .map(|s| quote! {::std::option::Option::Some(#s)})
+                .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
                 .unwrap_or_else(|| quote! {::std::option::Option::None});
             let field_deprecation = field
                 .deprecation
                 .as_ref()
-                .map(|s| quote! {::std::option::Option::Some(#s)})
+                .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
                 .unwrap_or_else(|| quote! {::std::option::Option::None});
             let cfg_attrs = get_cfg_attrs(&method.attrs);
 
@@ -166,7 +166,7 @@ pub fn generate(
                 });
                 let desc = desc
                     .as_ref()
-                    .map(|s| quote! {::std::option::Option::Some(#s)})
+                    .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
                     .unwrap_or_else(|| quote! {::std::option::Option::None});
                 let default = generate_default(&default, &default_with)?;
 
@@ -190,8 +190,8 @@ pub fn generate(
                     .unwrap_or_else(|| quote! {::std::option::Option::None});
 
                 schema_args.push(quote! {
-                    args.insert(#name, #crate_name::registry::MetaInputValue {
-                        name: #name,
+                    args.insert(::std::string::ToString::to_string(#name), #crate_name::registry::MetaInputValue {
+                        name: ::std::string::ToString::to_string(#name),
                         description: #desc,
                         ty: <#ty as #crate_name::Type>::create_type_info(registry),
                         default_value: #schema_default,
@@ -243,8 +243,8 @@ pub fn generate(
 
             schema_fields.push(quote! {
                 #(#cfg_attrs)*
-                fields.insert(::std::borrow::ToOwned::to_owned(#field_name), #crate_name::registry::MetaField {
-                    name: ::std::borrow::ToOwned::to_owned(#field_name),
+                fields.insert(::std::string::ToString::to_string(#field_name), #crate_name::registry::MetaField {
+                    name: ::std::string::ToString::to_string(#field_name),
                     description: #field_desc,
                     args: {
                         let mut args = #crate_name::indexmap::IndexMap::new();
@@ -375,8 +375,8 @@ pub fn generate(
 
             #[allow(bare_trait_objects)]
             fn create_type_info(registry: &mut #crate_name::registry::Registry) -> ::std::string::String {
-                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::Object {
-                    name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::Object(#crate_name::registry::MetaObject {
+                    name: ::std::string::ToString::to_string(#gql_typename),
                     description: #desc,
                     fields: {
                         let mut fields = #crate_name::indexmap::IndexMap::new();
@@ -386,7 +386,7 @@ pub fn generate(
                     cache_control: ::std::default::Default::default(),
                     extends: false,
                     keys: ::std::option::Option::None,
-                })
+                }))
             }
         }
 

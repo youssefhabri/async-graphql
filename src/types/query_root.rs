@@ -30,14 +30,14 @@ impl<T: Type> Type for QueryRoot<T> {
     fn create_type_info(registry: &mut registry::Registry) -> String {
         let schema_type = __Schema::create_type_info(registry);
         let root = T::create_type_info(registry);
-        if let Some(registry::MetaType::Object { fields, .. }) =
+        if let Some(registry::MetaType::Object(registry::MetaObject { fields, .. })) =
             registry.types.get_mut(T::type_name().as_ref())
         {
             fields.insert(
                 "__schema".to_string(),
                 registry::MetaField {
                     name: "__schema".to_string(),
-                    description: Some("Access the current type schema of this server."),
+                    description: Some("Access the current type schema of this server.".to_string()),
                     args: Default::default(),
                     ty: schema_type,
                     deprecation: None,
@@ -52,13 +52,13 @@ impl<T: Type> Type for QueryRoot<T> {
                 "__type".to_string(),
                 registry::MetaField {
                     name: "__type".to_string(),
-                    description: Some("Request the type information of a single type."),
+                    description: Some("Request the type information of a single type.".to_string()),
                     args: {
                         let mut args = IndexMap::new();
                         args.insert(
-                            "name",
+                            "name".to_string(),
                             registry::MetaInputValue {
-                                name: "name",
+                                name: "name".to_string(),
                                 description: None,
                                 ty: "String!".to_string(),
                                 default_value: None,

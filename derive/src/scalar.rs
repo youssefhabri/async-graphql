@@ -23,7 +23,7 @@ pub fn generate(
         .clone()
         .unwrap_or_else(|| RenameTarget::Type.rename(self_name.clone()));
     let desc = get_rustdoc(&item_impl.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
     let self_ty = &item_impl.self_ty;
     let generic = &item_impl.generics;
@@ -39,11 +39,11 @@ pub fn generate(
             }
 
             fn create_type_info(registry: &mut #crate_name::registry::Registry) -> ::std::string::String {
-                registry.create_type::<#self_ty, _>(|_| #crate_name::registry::MetaType::Scalar {
-                    name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                registry.create_type::<#self_ty, _>(|_| #crate_name::registry::MetaType::Scalar(#crate_name::registry::MetaScalar{
+                    name: ::std::string::ToString::to_string(#gql_typename),
                     description: #desc,
                     is_valid: |value| <#self_ty as #crate_name::ScalarType>::is_valid(value),
-                })
+                }))
             }
         }
 

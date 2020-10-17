@@ -239,8 +239,8 @@ where
         };
 
         registry.add_directive(MetaDirective {
-            name: "include",
-            description: Some("Directs the executor to include this field or fragment only when the `if` argument is true."),
+            name: "include".to_string(),
+            description: Some("Directs the executor to include this field or fragment only when the `if` argument is true.".to_string()),
             locations: vec![
                 __DirectiveLocation::FIELD,
                 __DirectiveLocation::FRAGMENT_SPREAD,
@@ -248,9 +248,9 @@ where
             ],
             args: {
                 let mut args = IndexMap::new();
-                args.insert("if", MetaInputValue {
-                    name: "if",
-                    description: Some("Included when true."),
+                args.insert("if".to_string(), MetaInputValue {
+                    name: "if".to_string(),
+                    description: Some("Included when true.".to_string()),
                     ty: "Boolean!".to_string(),
                     default_value: None,
                     validator: None,
@@ -260,8 +260,8 @@ where
         });
 
         registry.add_directive(MetaDirective {
-            name: "skip",
-            description: Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
+            name: "skip".to_string(),
+            description: Some("Directs the executor to skip this field or fragment when the `if` argument is true.".to_string()),
             locations: vec![
                 __DirectiveLocation::FIELD,
                 __DirectiveLocation::FRAGMENT_SPREAD,
@@ -269,9 +269,9 @@ where
             ],
             args: {
                 let mut args = IndexMap::new();
-                args.insert("if", MetaInputValue {
-                    name: "if",
-                    description: Some("Skipped when true."),
+                args.insert("if".to_string(), MetaInputValue {
+                    name: "if".to_string(),
+                    description: Some("Skipped when true.".to_string()),
                     ty: "Boolean!".to_string(),
                     default_value: None,
                     validator: None,
@@ -281,8 +281,10 @@ where
         });
 
         registry.add_directive(MetaDirective {
-            name: "ifdef",
-            description: Some("Directs the executor to query only when the field exists."),
+            name: "ifdef".to_string(),
+            description: Some(
+                "Directs the executor to query only when the field exists.".to_string(),
+            ),
             locations: vec![__DirectiveLocation::FIELD],
             args: Default::default(),
         });

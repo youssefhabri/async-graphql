@@ -43,7 +43,7 @@ pub fn generate(object_args: &args::InputObject) -> GeneratorResult<TokenStream>
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&object_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let mut get_fields = Vec::new();
@@ -67,7 +67,7 @@ pub fn generate(object_args: &args::InputObject) -> GeneratorResult<TokenStream>
             schema_fields.push(quote! {
                 #crate_name::static_assertions::assert_impl_one!(#ty: #crate_name::InputObjectType);
                 #ty::create_type_info(registry);
-                if let Some(#crate_name::registry::MetaType::InputObject { input_fields, .. }) =
+                if let Some(#crate_name::registry::MetaType::InputObject(#crate_name::registry::MetaInputObject { input_fields, .. })) =
                     registry.types.get(&*<#ty as #crate_name::Type>::type_name()) {
                     fields.extend(::std::clone::Clone::clone(input_fields));
                 }
@@ -97,7 +97,7 @@ pub fn generate(object_args: &args::InputObject) -> GeneratorResult<TokenStream>
             None => quote!(::std::option::Option::None),
         };
         let desc = get_rustdoc(&field.attrs)?
-            .map(|s| quote! { ::std::option::Option::Some(#s) })
+            .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
             .unwrap_or_else(|| quote! {::std::option::Option::None});
         let default = generate_default(&field.default, &field.default_with)?;
         let schema_default = default
@@ -141,8 +141,8 @@ pub fn generate(object_args: &args::InputObject) -> GeneratorResult<TokenStream>
 
         fields.push(ident);
         schema_fields.push(quote! {
-            fields.insert(::std::borrow::ToOwned::to_owned(#name), #crate_name::registry::MetaInputValue {
-                name: #name,
+            fields.insert(::std::string::ToString::to_string(#name), #crate_name::registry::MetaInputValue {
+                name: ::std::string::ToString::to_string(#name),
                 description: #desc,
                 ty: <#ty as #crate_name::Type>::create_type_info(registry),
                 default_value: #schema_default,
@@ -159,15 +159,15 @@ pub fn generate(object_args: &args::InputObject) -> GeneratorResult<TokenStream>
             }
 
             fn create_type_info(registry: &mut #crate_name::registry::Registry) -> ::std::string::String {
-                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::InputObject {
-                    name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::InputObject(#crate_name::registry::MetaInputObject{
+                    name: ::std::string::ToString::to_string(#gql_typename),
                     description: #desc,
                     input_fields: {
                         let mut fields = #crate_name::indexmap::IndexMap::new();
                         #(#schema_fields)*
                         fields
                     }
-                })
+                }))
             }
         }
 

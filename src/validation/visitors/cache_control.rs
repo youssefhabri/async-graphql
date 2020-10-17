@@ -1,5 +1,5 @@
 use crate::parser::types::{Field, SelectionSet};
-use crate::registry::MetaType;
+use crate::registry::{MetaObject, MetaType};
 use crate::validation::visitor::{Visitor, VisitorContext};
 use crate::{CacheControl, Positioned};
 
@@ -14,7 +14,7 @@ impl<'ctx, 'a> Visitor<'ctx> for CacheControlCalculate<'a> {
         _selection_set: &Positioned<SelectionSet>,
     ) {
         if let Some(current_type) = ctx.current_type() {
-            if let MetaType::Object { cache_control, .. } = current_type {
+            if let MetaType::Object(MetaObject { cache_control, .. }) = current_type {
                 *self.cache_control = self.cache_control.merge(cache_control);
             }
         }

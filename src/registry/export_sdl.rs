@@ -1,6 +1,9 @@
 use std::fmt::Write;
 
-use crate::registry::{MetaField, MetaInputValue, MetaType, Registry};
+use crate::registry::{
+    MetaEnum, MetaField, MetaInputObject, MetaInputValue, MetaInterface, MetaObject, MetaScalar,
+    MetaType, MetaUnion, Registry,
+};
 
 impl Registry {
     pub fn export_sdl(&self, federation: bool) -> String {
@@ -52,7 +55,7 @@ impl Registry {
                 writeln!(
                     sdl,
                     "\t\"\"\"\n\t{}\n\t\"\"\"",
-                    field.description.unwrap().replace("\n", "\n\t")
+                    field.description.as_ref().unwrap().replace("\n", "\n\t")
                 )
                 .ok();
             }
@@ -73,10 +76,10 @@ impl Registry {
                 if field.external {
                     write!(sdl, " @external").ok();
                 }
-                if let Some(requires) = field.requires {
+                if let Some(requires) = &field.requires {
                     write!(sdl, " @requires(fields: \"{}\")", requires).ok();
                 }
-                if let Some(provides) = field.provides {
+                if let Some(provides) = &field.provides {
                     write!(sdl, " @provides(fields: \"{}\")", provides).ok();
                 }
             }
@@ -87,9 +90,9 @@ impl Registry {
 
     fn export_type(&self, ty: &MetaType, sdl: &mut String, federation: bool) {
         match ty {
-            MetaType::Scalar {
+            MetaType::Scalar(MetaScalar {
                 name, description, ..
-            } => {
+            }) => {
                 const SYSTEM_SCALARS: &[&str] = &["Int", "Float", "String", "Boolean", "ID"];
                 const FEDERATION_SCALARS: &[&str] = &["Any"];
                 let mut export_scalar = !SYSTEM_SCALARS.contains(&name.as_str());
@@ -98,19 +101,19 @@ impl Registry {
                 }
                 if export_scalar {
                     if description.is_some() && !federation {
-                        writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                        writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                     }
                     writeln!(sdl, "scalar {}", name).ok();
                 }
             }
-            MetaType::Object {
+            MetaType::Object(MetaObject {
                 name,
                 fields,
                 extends,
                 keys,
                 description,
                 ..
-            } => {
+            }) => {
                 if name == &self.query_type && federation && fields.len() <= 4 {
                     // Is empty query root, only __schema, __type, _service, _entities fields
                     return;
@@ -123,7 +126,7 @@ impl Registry {
                 }
 
                 if description.is_some() && !federation {
-                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                 }
                 if federation && *extends {
                     write!(sdl, "extend ").ok();
@@ -150,16 +153,16 @@ impl Registry {
                 Self::export_fields(sdl, fields.values(), federation);
                 writeln!(sdl, "}}").ok();
             }
-            MetaType::Interface {
+            MetaType::Interface(MetaInterface {
                 name,
                 fields,
                 extends,
                 keys,
                 description,
                 ..
-            } => {
+            }) => {
                 if description.is_some() && !federation {
-                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                 }
                 if federation && *extends {
                     write!(sdl, "extend ").ok();
@@ -176,14 +179,14 @@ impl Registry {
                 Self::export_fields(sdl, fields.values(), federation);
                 writeln!(sdl, "}}").ok();
             }
-            MetaType::Enum {
+            MetaType::Enum(MetaEnum {
                 name,
                 enum_values,
                 description,
                 ..
-            } => {
+            }) => {
                 if description.is_some() && !federation {
-                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                 }
                 write!(sdl, "enum {} ", name).ok();
                 writeln!(sdl, "{{").ok();
@@ -192,33 +195,33 @@ impl Registry {
                 }
                 writeln!(sdl, "}}").ok();
             }
-            MetaType::InputObject {
+            MetaType::InputObject(MetaInputObject {
                 name,
                 input_fields,
                 description,
                 ..
-            } => {
+            }) => {
                 if description.is_some() && !federation {
-                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                 }
                 write!(sdl, "input {} ", name).ok();
                 writeln!(sdl, "{{").ok();
                 for field in input_fields.values() {
-                    if let Some(description) = field.description {
+                    if let Some(description) = &field.description {
                         writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description).ok();
                     }
                     writeln!(sdl, "{}", export_input_value(&field)).ok();
                 }
                 writeln!(sdl, "}}").ok();
             }
-            MetaType::Union {
+            MetaType::Union(MetaUnion {
                 name,
                 possible_types,
                 description,
                 ..
-            } => {
+            }) => {
                 if description.is_some() && !federation {
-                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
+                    writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.as_ref().unwrap()).ok();
                 }
                 write!(sdl, "union {} =", name).ok();
                 for ty in possible_types {

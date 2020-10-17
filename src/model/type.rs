@@ -69,20 +69,14 @@ impl<'a> __Type<'a> {
     async fn description(&self) -> Option<String> {
         match &self.detail {
             TypeDetail::Named(ty) => match ty {
-                registry::MetaType::Scalar { description, .. } => {
-                    description.map(|s| s.to_string())
-                }
-                registry::MetaType::Object { description, .. } => {
-                    description.map(|s| s.to_string())
-                }
-                registry::MetaType::Interface { description, .. } => {
-                    description.map(|s| s.to_string())
-                }
-                registry::MetaType::Union { description, .. } => description.map(|s| s.to_string()),
-                registry::MetaType::Enum { description, .. } => description.map(|s| s.to_string()),
-                registry::MetaType::InputObject { description, .. } => {
-                    description.map(|s| s.to_string())
-                }
+                registry::MetaType::Scalar(registry::MetaScalar { description, .. })
+                | registry::MetaType::Object(registry::MetaObject { description, .. })
+                | registry::MetaType::Interface(registry::MetaInterface { description, .. })
+                | registry::MetaType::Union(registry::MetaUnion { description, .. })
+                | registry::MetaType::Enum(registry::MetaEnum { description, .. })
+                | registry::MetaType::InputObject(registry::MetaInputObject {
+                    description, ..
+                }) => description.clone(),
             },
             TypeDetail::NonNull(_) => None,
             TypeDetail::List(_) => None,
@@ -113,7 +107,10 @@ impl<'a> __Type<'a> {
     }
 
     async fn interfaces(&self) -> Option<Vec<__Type<'a>>> {
-        if let TypeDetail::Named(registry::MetaType::Object { name, .. }) = &self.detail {
+        if let TypeDetail::Named(registry::MetaType::Object(registry::MetaObject {
+            name, ..
+        })) = &self.detail
+        {
             Some(
                 self.registry
                     .implements
@@ -129,26 +126,21 @@ impl<'a> __Type<'a> {
     }
 
     async fn possible_types(&self) -> Option<Vec<__Type<'a>>> {
-        if let TypeDetail::Named(registry::MetaType::Interface { possible_types, .. }) =
-            &self.detail
-        {
-            Some(
+        match &self.detail {
+            TypeDetail::Named(registry::MetaType::Interface(registry::MetaInterface {
+                possible_types,
+                ..
+            }))
+            | TypeDetail::Named(registry::MetaType::Union(registry::MetaUnion {
+                possible_types,
+                ..
+            })) => Some(
                 possible_types
                     .iter()
                     .map(|ty| __Type::new(self.registry, ty))
                     .collect(),
-            )
-        } else if let TypeDetail::Named(registry::MetaType::Union { possible_types, .. }) =
-            &self.detail
-        {
-            Some(
-                possible_types
-                    .iter()
-                    .map(|ty| __Type::new(self.registry, ty))
-                    .collect(),
-            )
-        } else {
-            None
+            ),
+            _ => None,
         }
     }
 
@@ -156,7 +148,10 @@ impl<'a> __Type<'a> {
         &self,
         #[graphql(default = false)] include_deprecated: bool,
     ) -> Option<Vec<__EnumValue<'a>>> {
-        if let TypeDetail::Named(registry::MetaType::Enum { enum_values, .. }) = &self.detail {
+        if let TypeDetail::Named(registry::MetaType::Enum(registry::MetaEnum {
+            enum_values, ..
+        })) = &self.detail
+        {
             Some(
                 enum_values
                     .values()
@@ -173,8 +168,10 @@ impl<'a> __Type<'a> {
     }
 
     async fn input_fields(&self) -> Option<Vec<__InputValue<'a>>> {
-        if let TypeDetail::Named(registry::MetaType::InputObject { input_fields, .. }) =
-            &self.detail
+        if let TypeDetail::Named(registry::MetaType::InputObject(registry::MetaInputObject {
+            input_fields,
+            ..
+        })) = &self.detail
         {
             Some(
                 input_fields

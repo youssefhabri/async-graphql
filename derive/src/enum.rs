@@ -21,7 +21,7 @@ pub fn generate(enum_args: &args::Enum) -> GeneratorResult<TokenStream> {
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&enum_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let mut enum_items = Vec::new();
@@ -49,10 +49,10 @@ pub fn generate(enum_args: &args::Enum) -> GeneratorResult<TokenStream> {
         let item_deprecation = variant
             .deprecation
             .as_ref()
-            .map(|s| quote! { ::std::option::Option::Some(#s) })
+            .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
             .unwrap_or_else(|| quote! {::std::option::Option::None});
         let item_desc = get_rustdoc(&variant.attrs)?
-            .map(|s| quote! { ::std::option::Option::Some(#s) })
+            .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
             .unwrap_or_else(|| quote! {::std::option::Option::None});
 
         enum_items.push(item_ident);
@@ -63,8 +63,8 @@ pub fn generate(enum_args: &args::Enum) -> GeneratorResult<TokenStream> {
             }
         });
         schema_enum_items.push(quote! {
-            enum_items.insert(#gql_item_name, #crate_name::registry::MetaEnumValue {
-                name: #gql_item_name,
+            enum_items.insert(::std::string::ToString::to_string(#gql_item_name), #crate_name::registry::MetaEnumValue {
+                name: ::std::string::ToString::to_string(#gql_item_name),
                 description: #item_desc,
                 deprecation: #item_deprecation,
             });
@@ -127,15 +127,15 @@ pub fn generate(enum_args: &args::Enum) -> GeneratorResult<TokenStream> {
 
             fn create_type_info(registry: &mut #crate_name::registry::Registry) -> ::std::string::String {
                 registry.create_type::<Self, _>(|registry| {
-                    #crate_name::registry::MetaType::Enum {
-                        name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                    #crate_name::registry::MetaType::Enum(#crate_name::registry::MetaEnum {
+                        name: ::std::string::ToString::to_string(#gql_typename),
                         description: #desc,
                         enum_values: {
                             let mut enum_items = #crate_name::indexmap::IndexMap::new();
                             #(#schema_enum_items)*
                             enum_items
                         },
-                    }
+                    })
                 })
             }
         }

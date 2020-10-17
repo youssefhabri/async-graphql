@@ -87,8 +87,8 @@ impl<'a> MetaTypeName<'a> {
 
 #[derive(Clone)]
 pub struct MetaInputValue {
-    pub name: &'static str,
-    pub description: Option<&'static str>,
+    pub name: String,
+    pub description: Option<String>,
     pub ty: String,
     pub default_value: Option<String>,
     pub validator: Option<Arc<dyn InputValueValidator>>,
@@ -97,60 +97,72 @@ pub struct MetaInputValue {
 #[derive(Clone)]
 pub struct MetaField {
     pub name: String,
-    pub description: Option<&'static str>,
-    pub args: IndexMap<&'static str, MetaInputValue>,
+    pub description: Option<String>,
+    pub args: IndexMap<String, MetaInputValue>,
     pub ty: String,
-    pub deprecation: Option<&'static str>,
+    pub deprecation: Option<String>,
     pub cache_control: CacheControl,
     pub external: bool,
-    pub requires: Option<&'static str>,
-    pub provides: Option<&'static str>,
+    pub requires: Option<String>,
+    pub provides: Option<String>,
 }
 
 #[derive(Clone)]
 pub struct MetaEnumValue {
-    pub name: &'static str,
-    pub description: Option<&'static str>,
-    pub deprecation: Option<&'static str>,
+    pub name: String,
+    pub description: Option<String>,
+    pub deprecation: Option<String>,
+}
+
+pub struct MetaScalar {
+    pub name: String,
+    pub description: Option<String>,
+    pub is_valid: fn(value: &Value) -> bool,
+}
+
+pub struct MetaObject {
+    pub name: String,
+    pub description: Option<String>,
+    pub fields: IndexMap<String, MetaField>,
+    pub cache_control: CacheControl,
+    pub extends: bool,
+    pub keys: Option<Vec<String>>,
+}
+
+pub struct MetaInterface {
+    pub name: String,
+    pub description: Option<String>,
+    pub fields: IndexMap<String, MetaField>,
+    pub possible_types: IndexSet<String>,
+    pub extends: bool,
+    pub keys: Option<Vec<String>>,
+}
+
+pub struct MetaUnion {
+    pub name: String,
+    pub description: Option<String>,
+    pub possible_types: IndexSet<String>,
+}
+
+pub struct MetaEnum {
+    pub name: String,
+    pub description: Option<String>,
+    pub enum_values: IndexMap<String, MetaEnumValue>,
+}
+
+pub struct MetaInputObject {
+    pub name: String,
+    pub description: Option<String>,
+    pub input_fields: IndexMap<String, MetaInputValue>,
 }
 
 pub enum MetaType {
-    Scalar {
-        name: String,
-        description: Option<&'static str>,
-        is_valid: fn(value: &Value) -> bool,
-    },
-    Object {
-        name: String,
-        description: Option<&'static str>,
-        fields: IndexMap<String, MetaField>,
-        cache_control: CacheControl,
-        extends: bool,
-        keys: Option<Vec<String>>,
-    },
-    Interface {
-        name: String,
-        description: Option<&'static str>,
-        fields: IndexMap<String, MetaField>,
-        possible_types: IndexSet<String>,
-        extends: bool,
-        keys: Option<Vec<String>>,
-    },
-    Union {
-        name: String,
-        description: Option<&'static str>,
-        possible_types: IndexSet<String>,
-    },
-    Enum {
-        name: String,
-        description: Option<&'static str>,
-        enum_values: IndexMap<&'static str, MetaEnumValue>,
-    },
-    InputObject {
-        name: String,
-        description: Option<&'static str>,
-        input_fields: IndexMap<String, MetaInputValue>,
-    },
+    Scalar(MetaScalar),
+    Object(MetaObject),
+    Interface(MetaInterface),
+    Union(MetaUnion),
+    Enum(MetaEnum),
+    InputObject(MetaInputObject),
 }
 
 impl MetaType {
@@ -160,70 +172,54 @@ impl MetaType {
 
     pub fn fields(&self) -> Option<&IndexMap<String, MetaField>> {
         match self {
-            MetaType::Object { fields, .. } => Some(&fields),
-            MetaType::Interface { fields, .. } => Some(&fields),
+            MetaType::Object(MetaObject { fields, .. })
+            | MetaType::Interface(MetaInterface { fields, .. }) => Some(&fields),
             _ => None,
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            MetaType::Scalar { name, .. } => &name,
-            MetaType::Object { name, .. } => name,
-            MetaType::Interface { name, .. } => name,
-            MetaType::Union { name, .. } => name,
-            MetaType::Enum { name, .. } => name,
-            MetaType::InputObject { name, .. } => name,
+            MetaType::Scalar(MetaScalar { name, .. }) => name,
+            MetaType::Object(MetaObject { name, .. }) => name,
+            MetaType::Interface(MetaInterface { name, .. }) => name,
+            MetaType::Union(MetaUnion { name, .. }) => name,
+            MetaType::Enum(MetaEnum { name, .. }) => name,
+            MetaType::InputObject(MetaInputObject { name, .. }) => name,
         }
     }
 
     pub fn is_composite(&self) -> bool {
-        match self {
-            MetaType::Object { .. } => true,
-            MetaType::Interface { .. } => true,
-            MetaType::Union { .. } => true,
-            _ => false,
-        }
+        matches!(self, MetaType::Object(_) | MetaType::Interface(_) | MetaType::Union(_))
     }
 
     pub fn is_abstract(&self) -> bool {
-        match self {
-            MetaType::Interface { .. } => true,
-            MetaType::Union { .. } => true,
-            _ => false,
-        }
+        matches!(self, MetaType::Interface(_) | MetaType::Union(_))
     }
 
     pub fn is_leaf(&self) -> bool {
-        match self {
-            MetaType::Enum { .. } => true,
-            MetaType::Scalar { .. } => true,
-            _ => false,
-        }
+        matches!(self, MetaType::Enum(_) | MetaType::Scalar(_))
     }
 
     pub fn is_input(&self) -> bool {
-        match self {
-            MetaType::Enum { .. } => true,
-            MetaType::Scalar { .. } => true,
-            MetaType::InputObject { .. } => true,
-            _ => false,
-        }
+        matches!(self, MetaType::Enum(_) | MetaType::Scalar(_) | MetaType::InputObject(_))
     }
 
     pub fn is_possible_type(&self, type_name: &str) -> bool {
         match self {
-            MetaType::Interface { possible_types, .. } => possible_types.contains(type_name),
-            MetaType::Union { possible_types, .. } => possible_types.contains(type_name),
-            MetaType::Object { name, .. } => name == type_name,
+            MetaType::Interface(MetaInterface { possible_types, .. }) => {
+                possible_types.contains(type_name)
+            }
+            MetaType::Union(MetaUnion { possible_types, .. }) => possible_types.contains(type_name),
+            MetaType::Object(MetaObject { name, .. }) => name == type_name,
             _ => false,
         }
     }
 
     pub fn possible_types(&self) -> Option<&IndexSet<String>> {
         match self {
-            MetaType::Interface { possible_types, .. } => Some(possible_types),
-            MetaType::Union { possible_types, .. } => Some(possible_types),
+            MetaType::Interface(MetaInterface { possible_types, .. })
+            | MetaType::Union(MetaUnion { possible_types, .. }) => Some(possible_types),
             _ => None,
         }
     }
@@ -248,10 +244,10 @@ impl MetaType {
 }
 
 pub struct MetaDirective {
-    pub name: &'static str,
-    pub description: Option<&'static str>,
+    pub name: String,
+    pub description: Option<String>,
     pub locations: Vec<model::__DirectiveLocation>,
-    pub args: IndexMap<&'static str, MetaInputValue>,
+    pub args: IndexMap<String, MetaInputValue>,
 }
 
 pub struct Registry {
@@ -273,14 +269,14 @@ impl Registry {
             // Inserting a fake type before calling the function allows recursive types to exist.
             self.types.insert(
                 name.clone().into_owned(),
-                MetaType::Object {
+                MetaType::Object(MetaObject {
                     name: "".to_string(),
                     description: None,
                     fields: Default::default(),
                     cache_control: Default::default(),
                     extends: false,
                     keys: None,
-                },
+                }),
             );
             let ty = f(self);
             *self.types.get_mut(&*name).unwrap() = ty;
@@ -308,8 +304,8 @@ impl Registry {
 
     pub fn add_keys(&mut self, ty: &str, keys: &str) {
         let all_keys = match self.types.get_mut(ty) {
-            Some(MetaType::Object { keys: all_keys, .. }) => all_keys,
-            Some(MetaType::Interface { keys: all_keys, .. }) => all_keys,
+            Some(MetaType::Object(MetaObject { keys: all_keys, .. }))
+            | Some(MetaType::Interface(MetaInterface { keys: all_keys, .. })) => all_keys,
             _ => return,
         };
         if let Some(all_keys) = all_keys {
@@ -332,12 +328,12 @@ impl Registry {
 
     pub(crate) fn has_entities(&self) -> bool {
         self.types.values().any(|ty| match ty {
-            MetaType::Object {
+            MetaType::Object(MetaObject {
                 keys: Some(keys), ..
-            } => !keys.is_empty(),
-            MetaType::Interface {
+            })
+            | MetaType::Interface(MetaInterface {
                 keys: Some(keys), ..
-            } => !keys.is_empty(),
+            }) => !keys.is_empty(),
             _ => false,
         })
     }
@@ -347,27 +343,27 @@ impl Registry {
             .types
             .values()
             .filter_map(|ty| match ty {
-                MetaType::Object {
+                MetaType::Object(MetaObject {
                     name,
                     keys: Some(keys),
                     ..
-                } if !keys.is_empty() => Some(name.clone()),
-                MetaType::Interface {
+                })
+                | MetaType::Interface(MetaInterface {
                     name,
                     keys: Some(keys),
                     ..
-                } if !keys.is_empty() => Some(name.clone()),
+                }) if !keys.is_empty() => Some(name.clone()),
                 _ => None,
             })
             .collect();
 
         self.types.insert(
             "_Entity".to_string(),
-            MetaType::Union {
+            MetaType::Union(MetaUnion {
                 name: "_Entity".to_string(),
                 description: None,
                 possible_types,
-            },
+            }),
         );
     }
 
@@ -376,7 +372,7 @@ impl Registry {
 
         self.types.insert(
             "_Service".to_string(),
-            MetaType::Object {
+            MetaType::Object(MetaObject {
                 name: "_Service".to_string(),
                 description: None,
                 fields: {
@@ -400,13 +396,13 @@ impl Registry {
                 cache_control: Default::default(),
                 extends: false,
                 keys: None,
-            },
+            }),
         );
 
         self.create_entity_type();
 
         let query_root = self.types.get_mut(&self.query_type).unwrap();
-        if let MetaType::Object { fields, .. } = query_root {
+        if let MetaType::Object(MetaObject { fields, .. }) = query_root {
             fields.insert(
                 "_service".to_string(),
                 MetaField {
@@ -430,9 +426,9 @@ impl Registry {
                     args: {
                         let mut args = IndexMap::new();
                         args.insert(
-                            "representations",
+                            "representations".to_string(),
                             MetaInputValue {
-                                name: "representations",
+                                name: "representations".to_string(),
                                 description: None,
                                 ty: "[_Any!]!".to_string(),
                                 default_value: None,
@@ -462,11 +458,12 @@ impl Registry {
 
         for ty in self.types.values() {
             match ty {
-                MetaType::Scalar { name, .. } | MetaType::Union { name, .. } => {
+                MetaType::Scalar(MetaScalar { name, .. })
+                | MetaType::Union(MetaUnion { name, .. }) => {
                     names.insert(name.clone());
                 }
-                MetaType::Object { name, fields, .. }
-                | MetaType::Interface { name, fields, .. } => {
+                MetaType::Object(MetaObject { name, fields, .. })
+                | MetaType::Interface(MetaInterface { name, fields, .. }) => {
                     names.insert(name.clone());
                     names.extend(
                         fields
@@ -478,15 +475,15 @@ impl Registry {
                             .flatten(),
                     );
                 }
-                MetaType::Enum {
+                MetaType::Enum(MetaEnum {
                     name, enum_values, ..
-                } => {
+                }) => {
                     names.insert(name.clone());
                     names.extend(enum_values.values().map(|value| value.name.to_string()));
                 }
-                MetaType::InputObject {
+                MetaType::InputObject(MetaInputObject {
                     name, input_fields, ..
-                } => {
+                }) => {
                     names.insert(name.clone());
                     names.extend(input_fields.values().map(|field| field.name.to_string()));
                 }

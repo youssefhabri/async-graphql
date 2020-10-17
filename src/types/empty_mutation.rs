@@ -32,13 +32,15 @@ impl Type for EmptyMutation {
     }
 
     fn create_type_info(registry: &mut registry::Registry) -> String {
-        registry.create_type::<Self, _>(|_| registry::MetaType::Object {
-            name: "EmptyMutation".to_string(),
-            description: None,
-            fields: Default::default(),
-            cache_control: Default::default(),
-            extends: false,
-            keys: None,
+        registry.create_type::<Self, _>(|_| {
+            registry::MetaType::Object(registry::MetaObject {
+                name: "EmptyMutation".to_string(),
+                description: None,
+                fields: Default::default(),
+                cache_control: Default::default(),
+                extends: false,
+                keys: None,
+            })
         })
     }
 }

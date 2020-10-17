@@ -5,7 +5,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::parser::types::Field;
-use crate::registry::{MetaType, Registry};
+use crate::registry::{MetaScalar, MetaType, Registry};
 use crate::{
     from_value, to_value, ContextSelectionSet, InputValueResult, OutputValueType, Positioned,
     Scalar, ScalarType, ServerResult, Type, Value,
@@ -80,10 +80,12 @@ impl<T> Type for OutputJson<T> {
     }
 
     fn create_type_info(registry: &mut Registry) -> String {
-        registry.create_type::<OutputJson<T>, _>(|_| MetaType::Scalar {
-            name: Self::type_name().to_string(),
-            description: None,
-            is_valid: |_| true,
+        registry.create_type::<OutputJson<T>, _>(|_| {
+            MetaType::Scalar(MetaScalar {
+                name: Self::type_name().to_string(),
+                description: None,
+                is_valid: |_| true,
+            })
         })
     }
 }

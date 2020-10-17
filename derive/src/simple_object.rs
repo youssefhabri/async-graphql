@@ -19,7 +19,7 @@ pub fn generate(object_args: &args::SimpleObject) -> GeneratorResult<TokenStream
         .unwrap_or_else(|| RenameTarget::Type.rename(ident.to_string()));
 
     let desc = get_rustdoc(&object_args.attrs)?
-        .map(|s| quote! { ::std::option::Option::Some(#s) })
+        .map(|s| quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#s)) })
         .unwrap_or_else(|| quote! {::std::option::Option::None});
 
     let s = match &object_args.data {
@@ -51,20 +51,24 @@ pub fn generate(object_args: &args::SimpleObject) -> GeneratorResult<TokenStream
                 .rename(ident.unraw().to_string(), RenameTarget::Field)
         });
         let field_desc = get_rustdoc(&field.attrs)?
-            .map(|s| quote! {::std::option::Option::Some(#s)})
+            .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
             .unwrap_or_else(|| quote! {::std::option::Option::None});
         let field_deprecation = field
             .deprecation
             .as_ref()
-            .map(|s| quote! {::std::option::Option::Some(#s)})
+            .map(|s| quote! {::std::option::Option::Some(::std::string::ToString::to_string(#s))})
             .unwrap_or_else(|| quote! {::std::option::Option::None});
         let external = field.external;
         let requires = match &field.requires {
-            Some(requires) => quote! { ::std::option::Option::Some(#requires) },
+            Some(requires) => {
+                quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#requires)) }
+            }
             None => quote! { ::std::option::Option::None },
         };
         let provides = match &field.provides {
-            Some(provides) => quote! { ::std::option::Option::Some(#provides) },
+            Some(provides) => {
+                quote! { ::std::option::Option::Some(::std::string::ToString::to_string(#provides)) }
+            }
             None => quote! { ::std::option::Option::None },
         };
         let vis = &field.vis;
@@ -82,8 +86,8 @@ pub fn generate(object_args: &args::SimpleObject) -> GeneratorResult<TokenStream
         };
 
         schema_fields.push(quote! {
-            fields.insert(::std::borrow::ToOwned::to_owned(#field_name), #crate_name::registry::MetaField {
-                name: ::std::borrow::ToOwned::to_owned(#field_name),
+            fields.insert(::std::string::ToString::to_string(#field_name), #crate_name::registry::MetaField {
+                name: ::std::string::ToString::to_string(#field_name),
                 description: #field_desc,
                 args: ::std::default::Default::default(),
                 ty: <#ty as #crate_name::Type>::create_type_info(registry),
@@ -153,8 +157,8 @@ pub fn generate(object_args: &args::SimpleObject) -> GeneratorResult<TokenStream
             }
 
             fn create_type_info(registry: &mut #crate_name::registry::Registry) -> ::std::string::String {
-                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::Object {
-                    name: ::std::borrow::ToOwned::to_owned(#gql_typename),
+                registry.create_type::<Self, _>(|registry| #crate_name::registry::MetaType::Object(#crate_name::registry::MetaObject{
+                    name: ::std::string::ToString::to_string(#gql_typename),
                     description: #desc,
                     fields: {
                         let mut fields = #crate_name::indexmap::IndexMap::new();
@@ -164,7 +168,7 @@ pub fn generate(object_args: &args::SimpleObject) -> GeneratorResult<TokenStream
                     cache_control: #cache_control,
                     extends: #extends,
                     keys: ::std::option::Option::None,
-                })
+                }))
             }
         }
 

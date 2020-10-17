@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use indexmap::IndexMap;
 
 use crate::parser::types::Field;
-use crate::registry::{MetaType, Registry};
+use crate::registry::{MetaObject, MetaType, Registry};
 use crate::resolver_utils::resolve_container;
 use crate::{
     CacheControl, ContainerType, Context, ContextSelectionSet, ObjectType, OutputValueType,
@@ -24,35 +24,35 @@ impl<A: Type, B: Type> Type for MergedObject<A, B> {
             let mut cc = CacheControl::default();
 
             A::create_type_info(registry);
-            if let Some(MetaType::Object {
+            if let Some(MetaType::Object(MetaObject {
                 fields: a_fields,
                 cache_control: a_cc,
                 ..
-            }) = registry.types.get(&*A::type_name())
+            })) = registry.types.get(&*A::type_name())
             {
                 fields.extend(a_fields.clone());
                 cc = cc.merge(&a_cc);
             }
 
             B::create_type_info(registry);
-            if let Some(MetaType::Object {
+            if let Some(MetaType::Object(MetaObject {
                 fields: b_fields,
                 cache_control: b_cc,
                 ..
-            }) = registry.types.get(&*B::type_name())
+            })) = registry.types.get(&*B::type_name())
             {
                 fields.extend(b_fields.clone());
                 cc = cc.merge(&b_cc);
             }
 
-            MetaType::Object {
+            MetaType::Object(MetaObject {
                 name: Self::type_name().to_string(),
                 description: None,
                 fields,
                 cache_control: cc,
                 extends: false,
                 keys: None,
-            }
+            })
         })
     }
 }

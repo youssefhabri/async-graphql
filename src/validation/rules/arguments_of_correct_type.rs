@@ -10,7 +10,7 @@ use async_graphql_value::Value;
 
 #[derive(Default)]
 pub struct ArgumentsOfCorrectType<'a> {
-    current_args: Option<&'a IndexMap<&'static str, MetaInputValue>>,
+    current_args: Option<&'a IndexMap<String, MetaInputValue>>,
 }
 
 impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
@@ -74,7 +74,7 @@ impl<'a> Visitor<'a> for ArgumentsOfCorrectType<'a> {
                     &value,
                     QueryPathNode {
                         parent: None,
-                        segment: QueryPathSegment::Name(arg.name),
+                        segment: QueryPathSegment::Name(&arg.name),
                     },
                 )
             }) {

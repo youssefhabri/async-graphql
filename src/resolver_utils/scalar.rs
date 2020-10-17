@@ -96,7 +96,7 @@ macro_rules! scalar {
         $crate::scalar_internal!(
             $ty,
             ::std::stringify!($ty),
-            ::std::option::Option::Some($desc)
+            ::std::option::Option::Some(::std::string::ToString::to_string($desc))
         );
     };
 
@@ -121,10 +121,12 @@ macro_rules! scalar_internal {
             fn create_type_info(
                 registry: &mut $crate::registry::Registry,
             ) -> ::std::string::String {
-                registry.create_type::<$ty, _>(|_| $crate::registry::MetaType::Scalar {
-                    name: ::std::borrow::ToOwned::to_owned($name),
-                    description: $desc,
-                    is_valid: |value| <$ty as $crate::ScalarType>::is_valid(value),
+                registry.create_type::<$ty, _>(|_| {
+                    $crate::registry::MetaType::Scalar($crate::registry::MetaScalar {
+                        name: ::std::string::ToString::to_string($name),
+                        description: $desc,
+                        is_valid: |value| <$ty as $crate::ScalarType>::is_valid(value),
+                    })
                 })
             }
         }

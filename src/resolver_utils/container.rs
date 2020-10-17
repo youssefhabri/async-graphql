@@ -4,7 +4,7 @@ use std::pin::Pin;
 
 use crate::extensions::{ErrorLogger, ExtensionContext, ResolveInfo};
 use crate::parser::types::Selection;
-use crate::registry::MetaType;
+use crate::registry::{MetaObject, MetaType};
 use crate::{
     Context, ContextSelectionSet, Name, OutputValueType, PathSegment, ServerError, ServerResult,
     Value,
@@ -138,7 +138,7 @@ impl<'a> Fields<'a> {
                     }
 
                     if ctx.is_ifdef(&field.node.directives) {
-                        if let Some(MetaType::Object { fields, .. }) =
+                        if let Some(MetaType::Object(MetaObject { fields, .. })) =
                             ctx.schema_env.registry.types.get(T::type_name().as_ref())
                         {
                             if !fields.contains_key(field.node.name.node.as_str()) {
